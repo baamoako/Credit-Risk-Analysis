@@ -88,12 +88,11 @@ source("credit_risk_analysis.R")
 
 ## Repo Structure
 
-```
 credit-risk-analysis/
-├── credit_risk_analysis.R   # Full analysis script
-├── credit_risk_dataset.csv  # Source data
+├── credit_risk_analysis.Rmd
+├── data/
+│   └── credit_risk_dataset.csv
 └── README.md
-```
 
 ---
 
