@@ -1,5 +1,3 @@
-# Credit-Risk-Analysis
-R-based analysis of borrower default risk across 32,581 loan records. Statistical profiling, probability modelling, and hypothesis testing.
 # Credit Risk Analysis
 
 Statistical analysis of borrower default risk using a 32,581-record loan dataset. Built in R with descriptive statistics, probability modelling, confidence intervals, and hypothesis testing.
@@ -88,11 +86,12 @@ source("credit_risk_analysis.R")
 
 ## Repo Structure
 
+```
 credit-risk-analysis/
-├── credit_risk_analysis.Rmd
-├── data/
-│   └── credit_risk_dataset.csv
+├── credit_risk_analysis.R   # Full analysis script
+├── credit_risk_dataset.csv  # Source data
 └── README.md
+```
 
 ---
 
