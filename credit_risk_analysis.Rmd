@@ -1,0 +1,373 @@
+---
+title: "Credit Risk Analysis"
+author: "Bismark Addo Amoako"
+date: "2024-11-08"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+# Credit Risk Analysis
+
+## Introduction
+
+The dataset under analysis is a credit risk dataset containing key information about individuals applying for loans, including their loan characteristics and credit history. Credit risk analysis aims to assess the likelihood of a borrower defaulting on a loan, helping financial institutions manage risk, adjust lending policies, and set appropriate loan terms.
+
+**Variables**:
+
+- **Person_age**: Age of the loan applicant.
+- **Person_income**: Annual income of the applicant.
+- **Person_home_ownership**: Indicates the applicant’s home ownership status.
+- **Person_emp_length**: Length of the applicant’s current employment (in months).
+- **Loan_intent**: Purpose for the loan.
+- **Loan_grade**: Creditworthiness grade (A - G).
+- **Loan_amnt**: Total loan amount.
+- **Loan_int_rate**: Loan interest rate.
+- **Loan_status**: Indicates if the applicant has defaulted.
+- **Loan_percent_income**: Portion of the applicant's income allocated to loan repayment.
+- **Cb_person_default_on_file**: Indicates past defaults (Yes/No).
+- **Cb_person_cred_hist_length**: Length of the applicant’s credit history (years).
+
+## Data Preparation
+
+### Load the Dataset:
+
+Set the working directory and load the credit risk dataset as a data frame named `credit_risk`.
+
+```{r}
+
+credit_risk <- read.csv("data/credit_risk_dataset.csv", na.strings = "")
+```
+
+### Reviewing the Dataset Structure and Variable Classification
+
+To understand the structure and nature of the variables:
+
+| Variable                    | Type             | Description             |
+|----------------------------|----------------------|-----------------------|
+| person_Age                 | discrete-numerical   | whole number          |
+| person_income              | discrete-numerical   | whole number          |
+| Person_home_ownership      | nominal-categorical  | represents no order   |
+| person_emp_length          | discrete-numerical   | whole number          |
+| loan_intent                | nominal-categorical  | not ordered           |
+| loan_grade                 | ordinal-categorical  | represents an order   |
+| loan_amnt                  | discrete-numerical   | whole number          |
+| loan_int_rate              | continuous-numerical | expressed in decimals |
+| loan_status                | binary                     |                       |
+| loan_percent_income        | continuous-numerical | expressed in decimals |
+| cb_person_default_on_file  | binary-categorical  | only two values       |
+| cb_person_cred_hist_length | discrete-numerical   | whole number          |
+
+### Exploring Dataset Structure
+
+Display the structure and summary of the data.
+```{r}
+str(credit_risk)
+summary(credit_risk)
+```
+**Display the top three rows of credit_risk.**
+```{r}
+head(credit_risk, 3)
+```
+### Handling Missing Values
+There are missing values in person_emp_length and loan_int_rate:
+    
+-   **person_emp_length**: 895 missing values.
+    
+-   **loan_int_rate**: 3,116 missing values.
+
+### Modifying Variable Data Types
+
+Convert categorical variables to ordered factors where necessary.
+  
+  **Factoring and Leveling The Default Risk**
+```{r}
+credit_risk$cb_person_default_on_file <- factor(credit_risk$cb_person_default_on_file,
+                                                levels = c("Y","N"))
+```
+
+  **Factoring and Leveling Home Ownership**
+```{r}
+credit_risk$person_home_ownership <- factor(credit_risk$person_home_ownership,
+                                                levels = c("MORTGAGE","OWN","RENT"))
+```
+    
+  **Factoring and Leveling Loan Intent**
+```{r}
+credit_risk$loan_intent <- factor(credit_risk$loan_intent,
+                                                levels = c("DEBT CONSOLIDATION","EDUCATION",
+                                                           "HOME IMPROVEMENT",
+                                                           "MEDICAL","PERSONAL","VENTURE"))
+```
+  
+  **Ordering Loan Grade**
+```{r}
+credit_risk$loan_grade <- factor(credit_risk$loan_grade,
+                                                levels = c("G","F","E","D",
+                                                           "C","B","A"), ordered = TRUE)
+```
+  
+  **Factoring and Leveling Loan Status**
+```{r}
+credit_risk$loan_status <- factor(credit_risk$loan_status,
+                                                levels = c("0","1"))
+```
+
+## Data Analysis
+### Descriptive Statistics
+Calculate mean, median, and standard deviation for key variables.
+
+#### Age Statistics
+```{r}
+mean_age<-mean(credit_risk$person_age,na.rm=TRUE)
+median_age<-median(credit_risk$person_age,na.rm=TRUE)
+sd_age<-sd(credit_risk$person_age,na.rm=TRUE)
+print(mean_age)
+print(median_age)
+print(sd_age)
+```
+**Mean Age**: The average age of borrowers is around 26 years old, suggesting that most borrowers are in their late twenties, which implies they may have shorter credit histories, potentially increasing default risk. 
+
+**Median Age**: The median age of 26 confirms that half of the borrowers are younger than 26, and half are older.
+
+**Standard Deviation (SD)**: With an SD of approximately 6.34, most borrowers are within 6 years of the average age.
+
+#### Income Statistics
+
+```{r}
+mean_income <- mean(credit_risk$person_income, na.rm = TRUE)
+median_income <- median(credit_risk$person_income, na.rm = TRUE)
+sd_income <- sd(credit_risk$person_income, na.rm = TRUE)
+print(mean_income)
+print(median_income)
+print(sd_income)
+```
+
+**Mean Income**: On average, applicants earn approximately 66,074.85 per year. This is positively correlated with their loan contributions, providing confidence in their repayment capacity.
+
+**Median Income**: The median income of 55,000 indicates that half of the applicants earn more and half earn less, reflecting a diverse borrower pool.
+
+**Income SD**: With an income standard deviation of 61,983.12, lenders can design loan products and set interest rates that align with the varying levels of risk associated with different income groups.
+
+**Loan Amount Statistics**
+
+```{r}
+mean_loanAmount <- mean(credit_risk$loan_amnt, na.rm = TRUE)
+median_loanAmount <- median(credit_risk$loan_amnt, na.rm = TRUE)
+sd_loanAmount <- sd(credit_risk$loan_amnt, na.rm = TRUE)
+print(mean_loanAmount)
+print(median_loanAmount)
+print(sd_loanAmount)
+```
+From the above results, applicants typically request loan amounts around the mean and within the standard deviation, which helps financial institutions estimate the general loan sizes being requested.
+
+### Risk Categorization
+Categorize loan risk based on loan_percent_income.
+```{r}
+credit_risk$Loan_to_Income_Ratio <- factor( 
+  ifelse(credit_risk$loan_percent_income <= 0.1, "Low Risk",
+         ifelse(credit_risk$loan_percent_income <= 0.3, "Medium Risk", 
+                "High Risk")),
+  ordered = TRUE, levels = c("Low Risk", "Medium Risk", "High Risk"))
+```
+
+### Loan Grade Description
+```{r}
+credit_risk$loan_grade_desc <- factor( ifelse(credit_risk$loan_grade=="A","Excellent",
+                                              ifelse(credit_risk$loan_grade %in% c("B", "C"), "Very Good",
+                                                     ifelse(credit_risk$loan_grade %in% c("D","E"), "Good", "Bad"))),
+                                       ordered= TRUE, levels=c("Bad"," Good","Very Good","Excellent")
+                                 
+)
+```
+### Age Classification
+```{r}
+credit_risk$age_group<- cut (credit_risk$person_age,
+                            breaks = c(20,31,46,60,Inf),
+                            labels = c("20-30","31-45", "46-60", "60+"),
+                            right = TRUE,
+                            ordered_result = TRUE)
+                          
+```
+
+### Loan Grade Description
+Create descriptive categories for loan grades.
+```{r}
+loan_default_and_loan_grad <- table(credit_risk$loan_grade, 
+                                  credit_risk$cb_person_default_on_file)
+print(loan_default_and_loan_grad)
+```
+
+### Probability of Loan Default
+
+**probability of a default**:
+```{r}
+overall_default_table <- table(credit_risk$cb_person_default_on_file)
+overall_default_probability <- prop.table(overall_default_table)["Y"]
+print(overall_default_probability)
+```
+The probability of default is **0.18** or **18%**.
+
+### The probability that a customer who rents has a record of default on file.
+```{r}
+rent_default <- table(credit_risk$person_home_ownership,
+                      credit_risk$cb_person_default_on_file)
+prop_rent_default <- prop.table(rent_default)["RENT","Y"]
+print(rent_default)
+print(prop_rent_default)
+```
+The probability that a homeowner who rents has a record of default is **0.1** or **10%**
+
+### The probability that a medical loan has a default status.
+```{r}
+med_Status <- table(credit_risk$loan_intent, 
+                    credit_risk$loan_status)
+prop_med_Status <- prop.table(med_Status)["MEDICAL","1"]
+print(med_Status)
+print(prop_med_Status)
+```
+The probability that a medical loan has a default status is **0.07** or **7%**
+
+### The conditional probability of a Grade C loan given a default.
+```{r}
+loan_default_and_loan_grad <- table(credit_risk$cb_person_default_on_file,
+                                           credit_risk$loan_grade)
+conditional_prob_grade_c_given_default <- prop.table(loan_default_and_loan_grad,1)["Y", "C"]
+print(loan_default_and_loan_grad )
+print(conditional_prob_grade_c_given_default)
+
+```
+The probability that a Grade C customer can default on a loan is **0.57** or **57%**
+
+### The probability that a customer is between the ages of 20-30, given that they have an Excellent grade description.
+```{r}
+grade_Agroup <- table (credit_risk$loan_grade_desc,credit_risk$age_group)
+prop_grade_Agroup <- prop.table(grade_Agroup,1)["Excellent","20-30"]
+addmargins(grade_Agroup)
+print(grade_Agroup)
+print(prop_grade_Agroup)
+```
+The probability of a customer being 20-30 years old, given an Excellent grade, is **0.80** or **80%**.
+
+### The probability that a customer is between the ages of 20-30, given that they have a history of loan default
+```{r}
+default_agroup <- table(credit_risk$cb_person_default_on_file,
+                        credit_risk$age_group)
+prop_default_agroup <- prop.table(default_agroup,1)["Y","20-30"]
+addmargins(default_agroup)
+print(default_agroup)
+print(prop_default_agroup)
+```
+The probability of a customer being 20-30, given a loan default history, is **0.79** or **79%**.
+
+## Visualization
+
+```{r}
+hist(credit_risk$loan_percent_income,
+     col="purple", main = "Loan Percent Income", 
+     xlab = "Loan-to-Income Ratio"
+     )
+```
+
+  i. The close values of the mean and median indicate that the data is likely symmetric and not significantly skewed.
+  
+  ii. Histogram has a unimodal distribution with one main peak.
+  
+  iii. The distribution is roughly normal, with a slight skew caused by a dip in the higher range values.
+    
+## Confidence Intervals
+
+**Confidence intervals for the income variable**
+
+#### Mean Income
+```{r}
+print(mean_income)
+```
+
+#### Standard deviation of income
+```{r}
+print(sd_income)
+```
+#### Sample size
+```{r}
+sample_size <- length(credit_risk$person_income)
+print(sample_size)
+```
+#### Standard error for income
+```{r}
+se_income <- sd_income/sqrt(sample_size)
+print(se_income)
+```
+#### 95% confidence intervalof mean income
+```{r}
+minci_income <- mean_income - (1.96 * se_income)
+maxci_income <-mean_income + (1.96 * se_income)
+print(minci_income)
+print(maxci_income)
+```
+**The result gives us a range 65,401.8 & 66,747.9, which represents the 95% confidence interval for the mean income.                       This means that if we repeated the sampling process many times, approximately 95% of the calculated confidence intervals would contain the true average income of the population.**
+
+  **Confidence intervals for the income proportion**
+
+**Sample size**
+```{r}
+ss_Loan <- length(credit_risk$loan_grade)
+print(ss_Loan)
+```
+**Sample proportion**
+```{r}
+count_gradeB <- sum(credit_risk$loan_grade == "B")
+print(count_gradeB)
+```
+**Sample proportion of grade B customers**
+```{r}
+sprop_gradeB <- count_gradeB/ss_Loan
+print(sprop_gradeB)
+```
+**Standard Error of Proportion of Grade**
+```{r}
+
+se_Propgrade <- sqrt((sprop_gradeB * (1- sprop_gradeB))/ss_Loan)
+print(se_Propgrade)
+
+```
+
+## 95% confidence interval for the proportion of Grade B customers.
+```{r}
+minci_gardeB <- sprop_gradeB - (1.96 * se_Propgrade)
+maxci_gradeB <-  sprop_gradeB + (1.96 * se_Propgrade)
+print(minci_gardeB)
+print(maxci_gradeB)
+```
+**The result provides a 95% confidence interval of [0.32, 0.33] for the true proportion of customers with a grade of B.                   This means that if we were to repeat the sampling process many times, approximately 95% of the calculated confidence intervals would contain the true proportion of grade B customers in the population.**
+
+
+## Hypothesis Testing
+      
+  **(a)** Is there a significant difference in the mean loan amounts between applicants who have a history of loan default and those who do not?
+  
+  **(b)** i. **Null Hypothesis**: There is no difference in the mean loan amounts between applicants with a history of loan default and those without.
+    
+  ii. **Alternative Hypothesis**: There is a difference in the mean loan amounts between applicants with a history of loan default and those without.
+    
+  **(c)** The **p-value** represents the probability of observing the sample data, or something more extreme, assuming that the null hypothesis is true. In other words, it tells us how likely we would be to see a difference in the mean loan amounts between groups by random chance if there is no real difference in the population.
+    
+  **(d)** **Interpretation of p-value**
+        
+  i. **Low p-value (typically <= 0.05)**: A low p-value suggests that the observed difference in mean loan amounts is unlikely to have occurred by random chance. Therefore, we would consider this as evidence against the null hypothesis, potentially leading us to reject the null hypothesis and conclude that a difference does exist.
+        
+  ii. **High p-value (typically > 0.05)**: A high p-value indicates that the observed difference in mean loan amounts could reasonably occur by random chance if the null hypothesis is true. This would lead us to fail to reject the null hypothesis, meaning we don’t have enough evidence to conclude there’s a difference.
+    
+  **(e)**. Generally, **The null hypothesis** is rejected when we have a low p-value, typically 0.05 or lower. This would suggest that the data provide enough evidence to support the alternative hypothesis.
+   **The null hypothesis is not rejected** when the p-value is high (greater than 0.05), meaning we don’t have sufficient evidence to support a difference in mean loan amounts based on loan default history.
+
+## Conclusion
+
+This report presents a comprehensive analysis of the credit risk dataset, including a detailed exploration of borrower characteristics, loan attributes, and the probability of default. By visualizing key relationships and calculating conditional probabilities, we can better understand the risk profiles of different borrowers and inform decisions regarding lending policies and interest rates.
+
+## References
+
+Tse,L (2020). *Credit Risk Dataset*.Kaggle. <https://www.kaggle.com/datasets/laotse/credit-risk-dataset/data>
+
